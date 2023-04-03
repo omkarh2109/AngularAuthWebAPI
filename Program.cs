@@ -27,21 +27,25 @@ builder.Services.AddControllers();
 builder.Services.AddAuthentication(opt => {
     opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
     .AddJwtBearer(options =>
     {
         options.RequireHttpsMetadata = false;
         options.SaveToken = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
 
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = false,
             ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("superSecretKey@345")),
+            ValidateAudience = true,
+            ValidateIssuer = true,
+            ClockSkew = TimeSpan.Zero,
+            ValidateLifetime = true,
             ValidIssuer = "https://localhost:5033",
             ValidAudience = "https://localhost:5033",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("superSecretKey@345"))
+
         };
     });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -11,12 +11,14 @@ using Microsoft.EntityFrameworkCore;
 using AngularAuthWebAPI.Helpers;
 using System.Security.Cryptography;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace AngularAuthWebAPI.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -33,7 +35,7 @@ namespace AngularAuthWebAPI.Controllers
             return isSignedUp;
         }
 
-
+        [AllowAnonymous]
         [HttpPost("authenticate")]
         public async Task<IActionResult> Authenticate([FromBody] AuthUser userObj)
         {
@@ -46,12 +48,6 @@ namespace AngularAuthWebAPI.Controllers
                 return NotFound(new { Message = "User Not Found" });
             }
             
-            //    if (!PasswordHasher.VerifyPassword(userObj.Password, users.Password))
-            //    {
-            //        return BadRequest(new { Message = "Password is incorrect!" });
-            //    }
-            //    return Ok(new { token = users.Token, Message = "Login Success" });
-            
             if (!PasswordHasher.VerifyPassword(userObj.Password, users.Password))
             {
                 return BadRequest(new { Message = "Password is incorrect!" });
@@ -62,13 +58,14 @@ namespace AngularAuthWebAPI.Controllers
             var newRefreshToken = CreateRefreshToken();
             users.RefreshTokenExpiryTime = DateTime.Now.AddDays(5);
             users.RefreshToken = newRefreshToken;
+            await _authContext.SaveChangesAsync();
             return Ok(new TokenApiDto()
             {
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken
             });
         }
-
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> registerUser([FromBody] AuthUser userObj)
         {
@@ -123,8 +120,9 @@ namespace AngularAuthWebAPI.Controllers
             var jwtTokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes("superSecretKey@345");
             var identity = new ClaimsIdentity(new Claim[] {
-                new Claim(ClaimTypes.Role, userObj.Role),
-                new Claim(ClaimTypes.Name, $"{userObj.Email}")
+                new Claim(ClaimTypes.Role, $"{userObj.Role}"),
+                new Claim(ClaimTypes.Name, $"{userObj.Email}"),
+                new Claim(ClaimTypes.Email, $"{userObj.Email}")
             });
 
             var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
@@ -132,13 +130,13 @@ namespace AngularAuthWebAPI.Controllers
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = identity,
-                Expires = DateTime.Now.AddSeconds(10),
+                Expires = DateTime.Now.AddMinutes(1),
                 SigningCredentials = credentials
             };
             var token = jwtTokenHandler.CreateToken(tokenDescriptor);
             return jwtTokenHandler.WriteToken(token);
         }
-
+        [AllowAnonymous]
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -170,7 +168,8 @@ namespace AngularAuthWebAPI.Controllers
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateLifetime = false
+                ValidateLifetime = false,
+                ClockSkew = TimeSpan.Zero
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             SecurityToken secuirtyToken;
@@ -185,7 +184,7 @@ namespace AngularAuthWebAPI.Controllers
                 return principal;
             }
         }
-
+        [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh(TokenApiDto tokenApiDto)
         {
