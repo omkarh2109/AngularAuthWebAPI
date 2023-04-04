@@ -39,12 +39,12 @@ builder.Services.AddAuthentication(opt => {
 
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("superSecretKey@345")),
-            ValidateAudience = true,
-            ValidateIssuer = true,
+            ValidateAudience = false,
+            ValidateIssuer = false,
             ClockSkew = TimeSpan.Zero,
             ValidateLifetime = true,
-            ValidIssuer = "https://localhost:5033",
-            ValidAudience = "https://localhost:5033",
+            //ValidIssuer = "http://localhost:5033",
+            //ValidAudience = "http://localhost:5033",
 
         };
     });

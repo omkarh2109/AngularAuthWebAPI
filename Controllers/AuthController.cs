@@ -122,7 +122,6 @@ namespace AngularAuthWebAPI.Controllers
             var identity = new ClaimsIdentity(new Claim[] {
                 new Claim(ClaimTypes.Role, $"{userObj.Role}"),
                 new Claim(ClaimTypes.Name, $"{userObj.Email}"),
-                new Claim(ClaimTypes.Email, $"{userObj.Email}")
             });
 
             var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
@@ -130,13 +129,13 @@ namespace AngularAuthWebAPI.Controllers
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = identity,
-                Expires = DateTime.Now.AddMinutes(1),
+                Expires = DateTime.Now.AddSeconds(50),
                 SigningCredentials = credentials
             };
             var token = jwtTokenHandler.CreateToken(tokenDescriptor);
             return jwtTokenHandler.WriteToken(token);
         }
-        [AllowAnonymous]
+        [Authorize]
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -168,8 +167,7 @@ namespace AngularAuthWebAPI.Controllers
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateLifetime = false,
-                ClockSkew = TimeSpan.Zero
+                ValidateLifetime = false
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             SecurityToken secuirtyToken;
@@ -197,7 +195,7 @@ namespace AngularAuthWebAPI.Controllers
             var principal = GetPrincipleFromExpiredToken(accessToken);
             var username = principal.Identity.Name;
             var user = await _authContext.AuthUsers.FirstOrDefaultAsync(x => x.Email == username);
-            if (user is null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
+            if (user is null)
             {
                 return BadRequest("Invalid Request");
             }
@@ -210,8 +208,6 @@ namespace AngularAuthWebAPI.Controllers
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken
             });
-
-
         }
     }
 }
