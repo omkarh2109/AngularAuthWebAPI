@@ -28,13 +28,6 @@ namespace AngularAuthWebAPI.Controllers
             _authContext = appDbContext;
         }
 
-        [HttpPost]
-        public bool Signup(AuthUser user)
-        {
-            bool isSignedUp = false;
-            return isSignedUp;
-        }
-
         [AllowAnonymous]
         [HttpPost("authenticate")]
         public async Task<IActionResult> Authenticate([FromBody] AuthUser userObj)
@@ -88,10 +81,6 @@ namespace AngularAuthWebAPI.Controllers
         }
 
 
-        //private async Task<bool> CheckEmailExistAsync(string email)
-        //{
-        //    return await _authContext.AuthUsers.AnyAsync(x => x.Email == email);
-        //}
         private Task<bool> CheckEmailExistAsync(string email)
             => _authContext.AuthUsers.AnyAsync(x => x.Email == email);
 
@@ -135,6 +124,7 @@ namespace AngularAuthWebAPI.Controllers
             var token = jwtTokenHandler.CreateToken(tokenDescriptor);
             return jwtTokenHandler.WriteToken(token);
         }
+
         [Authorize]
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
@@ -182,6 +172,7 @@ namespace AngularAuthWebAPI.Controllers
                 return principal;
             }
         }
+
         [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh(TokenApiDto tokenApiDto)
